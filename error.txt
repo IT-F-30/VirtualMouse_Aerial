@@ -1,0 +1,16 @@
+Error in cpuinfo: prctl(PR_SVE_GET_VL) failed
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+W0000 00:00:1731473624.024450    7085 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1731473624.068791    7085 inference_feedback_manager.cc:114] Feedback manager requires a model with a single signature inference. Disabling support for feedback tensors.
+W0000 00:00:1731473624.361185    7085 landmark_projection_calculator.cc:186] Using NORM_RECT without IMAGE_DIMENSIONS is only supported for the square ROI. Provide IMAGE_DIMENSIONS or use PROJECTION_MATRIX.
+qt.qpa.plugin: Could not find the Qt platform plugin "wayland" in "/home/user/.local/lib/python3.11/site-packages/cv2/qt/plugins"
+[[-1, 0], [0, 1], [0, 0], [0, 0], [1, 1], [1, -1], [2, -1], [1, -1], [1, 1], [1, 0], [1, -1], [1, -2], [0, 1], [0, 0], [-1, -1], [0, -1], [0, 1], [0, 0], [-1, 0], [-2, 2]] [[463, 225], [450, 196], [450, 170], [450, 150], [481, 161], [483, 128], [484, 109], [484, 92], [502, 163], [512, 130], [516, 110], [519, 93], [518, 172], [529, 143], [534, 124], [537, 107], [532, 187], [545, 167], [552, 154], [555, 142]]
+Traceback (most recent call last):
+  File "/home/user/Gescher/test-11.py", line 58, in <module>
+    pyautogui.move(-1 * count_left_d[7][0] * bai, count_left_d[7][1] * bai)
+  File "/home/user/.local/lib/python3.11/site-packages/pyautogui/__init__.py", line 593, in wrapper
+    failSafeCheck()
+  File "/home/user/.local/lib/python3.11/site-packages/pyautogui/__init__.py", line 1734, in failSafeCheck
+    raise FailSafeException(
+pyautogui.FailSafeException: PyAutoGUI fail-safe triggered from mouse moving to a corner of the screen. To disable this fail-safe, set pyautogui.FAILSAFE to False. DISABLING FAIL-SAFE IS NOT RECOMMENDED.
