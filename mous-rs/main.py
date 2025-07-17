@@ -1,8 +1,8 @@
 import cv2
 import mediapipe as mp
-
+import mous_rs
 kando = 10
-bai_a = 0.5
+bai_a = 0.1
 
 # Webカメラから入力を開始
 cap = cv2.VideoCapture(0)
@@ -34,27 +34,25 @@ def process_hand(landmarks, prev_finger_positions):
     if not count_d:
         return
     
-    print(landmarks[8])
+    # print(landmarks[8])
 
     # マウスカーソルを移動
     print(f"py.move {-1 * landmarks[8][0] * bai_a}, {landmarks[8][1] * bai_a}")
+    mous_rs.rsmove(int(-1 * landmarks[8][0] * bai_a), int(landmarks[8][1] * bai_a))
 
-    # # z座標のリストと平均
-    # z_list = [lm[2] for lm in landmarks]
-    # z_ave = sum(z_list) / len(z_list)
-    # print(f"z_ave: {z_ave:.4f}")
-
-    # 指の距離に基づいてクリック操作を判定
-    # count_cの要素は(x, y, z)
+    # z軸の情報を出力
     is_middle_finger_click = abs(count_c[3][0] - count_c[11][0]) <= kando and abs(count_c[3][1] - count_c[11][1]) <= kando
     is_ring_finger_click = abs(count_c[3][0] - count_c[15][0]) <= kando and abs(count_c[3][1] - count_c[15][1]) <= kando
 
     if is_middle_finger_click and is_ring_finger_click:
         print("py.doubleClick")
+        mous_rs.rsdouble_click()
     elif is_middle_finger_click:
         print("py.click")
+        mous_rs.rsclick()
     elif is_ring_finger_click:
         print("py.rightClick")
+        mous_rs.rsright_click()
 
 while True:
     success, img = cap.read()
