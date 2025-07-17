@@ -9,7 +9,6 @@ use pyo3::exceptions::PyValueError; // これを追加
 fn rsmove(x: i64, y: i64) -> PyResult<()> {
     let mut enigo = Enigo::new(&Settings::default())
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
-    println!("rsmove: x = {}, y = {}", x, y);
     move_relative(&mut enigo, x as i32, y as i32)
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
     Ok(())
@@ -21,7 +20,6 @@ fn rsmove(x: i64, y: i64) -> PyResult<()> {
 fn rsclick() -> PyResult<()> {
     let mut enigo = Enigo::new(&Settings::default())
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
-    println!("rsclick");
     left_click(&mut enigo)
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
     Ok(())
@@ -32,7 +30,6 @@ fn rsclick() -> PyResult<()> {
 fn rsright_click() -> PyResult<()> {
     let mut enigo = Enigo::new(&Settings::default())
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
-    println!("rsrightClick");
     right_click(&mut enigo)
         .map_err(|e| PyValueError::new_err(e.to_string()))?;
     Ok(())
@@ -42,10 +39,9 @@ fn rsright_click() -> PyResult<()> {
 #[pyfunction]
 fn rsdouble_click() -> PyResult<()> {
     let mut enigo = Enigo::new(&Settings::default())
-        .map_err(|e| PyValueError::new_err(e.to_string()))?; // .map_err()で変換
-    println!("rsdoubleClick");
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
     double_left_click(&mut enigo)
-        .map_err(|e| PyValueError::new_err(e.to_string()))?; // .map_err()で変換
+        .map_err(|e| PyValueError::new_err(e.to_string()))?;
     Ok(())
 }
 
