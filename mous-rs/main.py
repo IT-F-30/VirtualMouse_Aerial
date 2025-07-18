@@ -58,6 +58,12 @@ while True:
         print("ビデオフレームの読み込みに失敗しました。")
         break
 
+    # 左右反転
+    img = cv2.flip(img, 1)
+
+    # 画像を小さくする（例: 幅640, 高さ360）
+    img = cv2.resize(img, (640, 360))
+
     imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     results = hands.process(imgRGB)
 
@@ -72,7 +78,6 @@ while True:
                 z = landmark.z
                 landmarks.append((x, y, z))
 
-            # hand_info.classification[0].label を使って左右の手を判断
             hand_label = hand_info.classification[0].label
             if hand_label == "Left":
                 process_hand(landmarks, prev_finger_positions_left)
@@ -85,6 +90,7 @@ while True:
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+
 
 cap.release()
 cv2.destroyAllWindows()
