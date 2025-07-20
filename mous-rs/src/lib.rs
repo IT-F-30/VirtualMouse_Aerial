@@ -59,7 +59,15 @@ fn mous_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
 
 fn move_relative(enigo: &mut Enigo, x: i32, y: i32) -> Result<(), Box<dyn Error>> {
-    enigo.move_mouse(x, y, Coordinate::Rel)?;
+    // 0.1秒かけて滑らかに移動する
+    let steps = 20;
+    let delay = Duration::from_millis(5); // 5ms * 20 = 100ms
+    let dx = x as f32 / steps as f32;
+    let dy = y as f32 / steps as f32;
+    for i in 0..steps {
+        enigo.move_mouse(dx.round() as i32, dy.round() as i32, Coordinate::Rel)?;
+        thread::sleep(delay);
+    }
     Ok(())
 }
 
