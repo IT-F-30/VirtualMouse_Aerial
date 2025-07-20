@@ -42,15 +42,18 @@ def process_hand(landmarks, prev_finger_positions):
     is_middle_finger_click = abs(count_c[3][0] - count_c[11][0]) <= kando and abs(count_c[3][1] - count_c[11][1]) <= kando
     is_ring_finger_click = abs(count_c[3][0] - count_c[15][0]) <= kando and abs(count_c[3][1] - count_c[15][1]) <= kando
 
-    if is_middle_finger_click and is_ring_finger_click:
-        print("py.doubleClick")
-        mous_rs.rsdouble_click()
-    elif is_middle_finger_click:
+    # if is_middle_finger_click and is_ring_finger_click:
+    #     print("py.doubleClick")
+    #     mous_rs.rsdouble_click()
+    # elif is_middle_finger_click:
+    #     print("py.click")
+    #     mous_rs.rsclick()
+    # elif is_ring_finger_click:
+    #     print("py.rightClick")
+    #     mous_rs.rsright_click()
+    if is_middle_finger_click:
         print("py.click")
         mous_rs.rsclick()
-    elif is_ring_finger_click:
-        print("py.rightClick")
-        mous_rs.rsright_click()
 
 while True:
     success, img = cap.read()
@@ -68,23 +71,26 @@ while True:
     results = hands.process(imgRGB)
 
     if results.multi_hand_landmarks:
-        for hand_lms, hand_info in zip(results.multi_hand_landmarks, results.multi_handedness):
-            landmarks = []
-            mp_draw.draw_landmarks(img, hand_lms, mp_hands.HAND_CONNECTIONS)
+        # 最初の手だけを処理
+        hand_lms = results.multi_hand_landmarks[0]
+        hand_info = results.multi_handedness[0]
 
-            for landmark in hand_lms.landmark:
-                h, w, _ = img.shape
-                x, y = int(landmark.x * w), int(landmark.y * h)
-                z = landmark.z
-                landmarks.append((x, y, z))
+        landmarks = []
+        mp_draw.draw_landmarks(img, hand_lms, mp_hands.HAND_CONNECTIONS)
 
-            hand_label = hand_info.classification[0].label
-            if hand_label == "Left":
-                process_hand(landmarks, prev_finger_positions_left)
-                prev_finger_positions_left = landmarks[1:]
-            elif hand_label == "Right":
-                process_hand(landmarks, prev_finger_positions_right)
-                prev_finger_positions_right = landmarks[1:]
+        for landmark in hand_lms.landmark:
+            h, w, _ = img.shape
+            x, y = int(landmark.x * w), int(landmark.y * h)
+            z = landmark.z
+            landmarks.append((x, y, z))
+
+        hand_label = hand_info.classification[0].label
+        if hand_label == "Left":
+            process_hand(landmarks, prev_finger_positions_left)
+            prev_finger_positions_left = landmarks[1:]
+        elif hand_label == "Right":
+            process_hand(landmarks, prev_finger_positions_right)
+            prev_finger_positions_right = landmarks[1:]
 
     cv2.imshow("Virtual Mouse", img)
 
