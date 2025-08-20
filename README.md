@@ -1,7 +1,7 @@
 # VirtualMouse-Aeria
 
 ## はじめに
-VirtualMouse-Aerial(以降Aerial)は、空中で手を動かすとその手の動きに合わせてマウスを動かすプログラムです。
+VirtualMouse-Aerialは、空中で手を動かすとその手の動きに合わせてマウスを動かすプログラムです。
 
 # 動作環境
  - Python v3.11.13
