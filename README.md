@@ -10,7 +10,7 @@ VirtualMouse-Aerial(以降Aerial)は、空中で手を動かすとその手の�
 ## 使い方
 - 以下のコマンドを実行するか上記の動作環境の通りに環境を整備してください
 
-### Windows
+#### Windows
 ```
 # Windows (PowerShell)
 # winget を使用して Rust と Python をインストールします
@@ -20,7 +20,7 @@ rustup toolchain install 1.85.0
 rustup default 1.85.0
 ```
 
-### Mac
+#### Mac
 ```
 # macOS (Terminal)
 # Homebrew を使用して Rust と Python をインストールします
@@ -33,9 +33,9 @@ rustup default 1.85.0
 ```
 
 ### 使い方
-- 以下のコマンドを実行してください
+以下のコマンドを実行してください
 
-### windows 
+#### windows 
 ```
 # Windows (PowerShell)
 python -m venv venv
@@ -44,7 +44,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-### Mac
+#### Mac
 ```
 # macOS (Terminal)
 python3 -m venv venv
@@ -52,3 +52,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 python main.py
 ```
+
+### 　最後
+これでWebカメラが起動し、手の動きでマウスカーソルが動かせるようになるはずです。プログラムを終了するには、Webカメラのウィンドウを選択した状態で q キーを押してください。
