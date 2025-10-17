@@ -58,8 +58,8 @@ def process_hand(current_landmarks, prev_landmarks, current_time):
     dx = index_finger_current[0] - index_finger_prev[0]
     dy = index_finger_current[1] - index_finger_prev[1]
     
-    # マウスを移動（x軸は反転、y軸はそのまま）
-    mous_rs.rsmove(int(-dx * MOUSE_SENSITIVITY), int(dy * MOUSE_SENSITIVITY))
+    # マウスを移動（映像が左右反転しているので、x軸はそのまま、y軸はそのまま）
+    mous_rs.rsmove(int(dx * MOUSE_SENSITIVITY), int(dy * MOUSE_SENSITIVITY))
     
     # クリック判定：親指と中指が近づいているかチェック（クールダウン付き）
     if current_time > click_cooldown:
