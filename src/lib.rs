@@ -1,53 +1,56 @@
 use enigo::{Button, Coordinate, Direction, Enigo, Mouse, Settings};
-use std::{error::Error, thread, time::Duration};
+use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use pyo3::exceptions::PyValueError; // これを追加
+use std::{error::Error, thread, time::Duration};
 
-/// 1. x, y座標を受け取る関数
-/// 戻り値がないので PyResult<()> とします
+// マウス移動の設定
+const SMOOTH_STEPS: usize = 10; // 滑らかな移動のステップ数
+const STEP_DELAY_MS: u64 = 3; // 各ステップ間の遅延（ミリ秒）
+
+/// x, y座標を受け取ってマウスを移動する関数
 #[pyfunction]
 fn rsmove(x: i64, y: i64) -> PyResult<()> {
     let mut enigo = Enigo::new(&Settings::default())
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        .map_err(|e| PyValueError::new_err(format!("Enigo初期化エラー: {}", e)))?;
+
     move_relative(&mut enigo, x as i32, y as i32)
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        .map_err(|e| PyValueError::new_err(format!("マウス移動エラー: {}", e)))?;
     Ok(())
 }
 
-/// 2. クリックを処理する関数
-/// 引数がない場合も () が必要です
+/// 左クリックを実行する関数
 #[pyfunction]
 fn rsclick() -> PyResult<()> {
     let mut enigo = Enigo::new(&Settings::default())
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
-    left_click(&mut enigo)
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        .map_err(|e| PyValueError::new_err(format!("Enigo初期化エラー: {}", e)))?;
+
+    left_click(&mut enigo).map_err(|e| PyValueError::new_err(format!("クリックエラー: {}", e)))?;
     Ok(())
 }
 
-/// 3. 右クリックを処理する関数
+/// 右クリックを実行する関数
 #[pyfunction]
 fn rsright_click() -> PyResult<()> {
     let mut enigo = Enigo::new(&Settings::default())
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        .map_err(|e| PyValueError::new_err(format!("Enigo初期化エラー: {}", e)))?;
+
     right_click(&mut enigo)
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        .map_err(|e| PyValueError::new_err(format!("右クリックエラー: {}", e)))?;
     Ok(())
 }
 
-/// 4. ダブルクリックを処理する関数
+/// ダブルクリックを実行する関数
 #[pyfunction]
 fn rsdouble_click() -> PyResult<()> {
     let mut enigo = Enigo::new(&Settings::default())
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        .map_err(|e| PyValueError::new_err(format!("Enigo初期化エラー: {}", e)))?;
+
     double_left_click(&mut enigo)
-        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        .map_err(|e| PyValueError::new_err(format!("ダブルクリックエラー: {}", e)))?;
     Ok(())
 }
 
-
-/// Pythonモジュールを定義する部分
-/// wrap_pyfunction!マクロで各関数を登録します
+/// Pythonモジュールを定義
 #[pymodule]
 fn mous_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(rsmove, m)?)?;
@@ -57,14 +60,20 @@ fn mous_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 
-
+/// マウスを滑らかに相対移動する
 fn move_relative(enigo: &mut Enigo, x: i32, y: i32) -> Result<(), Box<dyn Error>> {
-    // 0.1秒かけて滑らかに移動する
-    let steps = 20;
-    let delay = Duration::from_millis(5); // 5ms * 20 = 100ms
-    let dx = x as f32 / steps as f32;
-    let dy = y as f32 / steps as f32;
-    for i in 0..steps {
+    // 小さな移動の場合は分割しない
+    if x.abs() <= 5 && y.abs() <= 5 {
+        enigo.move_mouse(x, y, Coordinate::Rel)?;
+        return Ok(());
+    }
+
+    // 滑らかな移動のために分割
+    let delay = Duration::from_millis(STEP_DELAY_MS);
+    let dx = x as f32 / SMOOTH_STEPS as f32;
+    let dy = y as f32 / SMOOTH_STEPS as f32;
+
+    for _ in 0..SMOOTH_STEPS {
         enigo.move_mouse(dx.round() as i32, dy.round() as i32, Coordinate::Rel)?;
         thread::sleep(delay);
     }

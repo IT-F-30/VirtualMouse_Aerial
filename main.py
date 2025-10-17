@@ -1,48 +1,78 @@
 import cv2
 import mediapipe as mp
 import mous_rs
-kando = 10
-bai_a = 10
+from config import (
+    CLICK_THRESHOLD,
+    MOUSE_SENSITIVITY,
+    CAMERA_INDEX,
+    CAMERA_WIDTH,
+    CAMERA_HEIGHT,
+    MAX_NUM_HANDS,
+    MIN_DETECTION_CONFIDENCE,
+    MIN_TRACKING_CONFIDENCE,
+    INDEX_FINGER_TIP,
+    THUMB_TIP,
+    MIDDLE_FINGER_TIP,
+    DEBUG_MODE,
+    SHOW_FPS
+)
+import time
 
 # Webカメラから入力を開始
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(CAMERA_INDEX)
 
 # MediaPipeの手の検出モデルを初期化
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands()
+hands = mp_hands.Hands(
+    max_num_hands=MAX_NUM_HANDS,
+    min_detection_confidence=MIN_DETECTION_CONFIDENCE,
+    min_tracking_confidence=MIN_TRACKING_CONFIDENCE
+)
 mp_draw = mp.solutions.drawing_utils
 
 # 前のフレームの手のランドマーク位置を保存する変数
-prev_finger_positions_left = None
-prev_finger_positions_right = None
+prev_landmarks = None
 
-def process_hand(landmarks, prev_finger_positions):
+# FPS計測用
+prev_time = 0
+click_cooldown = 0  # クリック連打防止用のクールダウン
+
+def process_hand(current_landmarks, prev_landmarks, current_time):
     """
-    手のランドマークを処理し、マウス操作やz軸情報を出力する関数
+    手のランドマークを処理し、マウス操作を実行する関数
+    
+    Args:
+        current_landmarks: 現在のフレームのランドマーク座標リスト
+        prev_landmarks: 前のフレームのランドマーク座標リスト
+        current_time: 現在の時刻
     """
-    if prev_finger_positions is None:
-        return
-
-    count_d = []
-    count_c = []
-    for prev, curr in zip(prev_finger_positions, landmarks[1:]):
-        dx, dy = curr[0] - prev[0], curr[1] - prev[1]
-        count_d.append((dx, dy))
-        count_c.append(curr)
-
-    # 移動量の平均を計算
-    if not count_d:
+    global click_cooldown
+    
+    if prev_landmarks is None:
         return
     
-    mous_rs.rsmove(int(-1 * count_d[8][0] * bai_a), int(count_d[8][1] * bai_a))
-
-    # z軸の情報を出力
-    is_middle_finger_click = abs(count_c[3][0] - count_c[11][0]) <= kando and abs(count_c[3][1] - count_c[11][1]) <= kando
-    is_ring_finger_click = abs(count_c[3][0] - count_c[15][0]) <= kando and abs(count_c[3][1] - count_c[15][1]) <= kando
-
-    if is_middle_finger_click:
-        print("py.click")
-        mous_rs.rsclick()
+    # 人差し指の移動量を計算
+    index_finger_current = current_landmarks[INDEX_FINGER_TIP]
+    index_finger_prev = prev_landmarks[INDEX_FINGER_TIP]
+    
+    dx = index_finger_current[0] - index_finger_prev[0]
+    dy = index_finger_current[1] - index_finger_prev[1]
+    
+    # マウスを移動（x軸は反転、y軸はそのまま）
+    mous_rs.rsmove(int(-dx * MOUSE_SENSITIVITY), int(dy * MOUSE_SENSITIVITY))
+    
+    # クリック判定：親指と中指が近づいているかチェック（クールダウン付き）
+    if current_time > click_cooldown:
+        thumb = current_landmarks[THUMB_TIP]
+        middle_finger = current_landmarks[MIDDLE_FINGER_TIP]
+        
+        distance = ((thumb[0] - middle_finger[0]) ** 2 + (thumb[1] - middle_finger[1]) ** 2) ** 0.5
+        
+        if distance <= CLICK_THRESHOLD:
+            if DEBUG_MODE:
+                print(f"Click detected (distance: {distance:.2f})")
+            mous_rs.rsclick()
+            click_cooldown = current_time + 0.3  # 300ms のクールダウン
 
 while True:
     success, img = cap.read()
@@ -50,42 +80,44 @@ while True:
         print("ビデオフレームの読み込みに失敗しました。")
         break
 
-    # 左右反転
+    # 左右反転して画像を小さくする
     img = cv2.flip(img, 1)
+    img = cv2.resize(img, (CAMERA_WIDTH, CAMERA_HEIGHT))
 
-    # 画像を小さくする（例: 幅640, 高さ360）
-    img = cv2.resize(img, (640, 360))
-
+    # RGB変換して手を検出
     imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     results = hands.process(imgRGB)
 
+    # FPS計算
+    current_time = time.time()
+    if SHOW_FPS:
+        fps = 1 / (current_time - prev_time) if prev_time > 0 else 0
+        prev_time = current_time
+        cv2.putText(img, f"FPS: {int(fps)}", (10, 30), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+
     if results.multi_hand_landmarks:
-        # 最初の手だけを処理
+        # 最初の手のみ処理
         hand_lms = results.multi_hand_landmarks[0]
-        hand_info = results.multi_handedness[0]
-
-        landmarks = []
+        
+        # ランドマークを描画
         mp_draw.draw_landmarks(img, hand_lms, mp_hands.HAND_CONNECTIONS)
-
-        for landmark in hand_lms.landmark:
-            h, w, _ = img.shape
-            x, y = int(landmark.x * w), int(landmark.y * h)
-            z = landmark.z
-            landmarks.append((x, y, z))
-
-        hand_label = hand_info.classification[0].label
-        if hand_label == "Left":
-            process_hand(landmarks, prev_finger_positions_left)
-            prev_finger_positions_left = landmarks[1:]
-        elif hand_label == "Right":
-            process_hand(landmarks, prev_finger_positions_right)
-            prev_finger_positions_right = landmarks[1:]
+        
+        # ランドマーク座標を取得
+        h, w, _ = img.shape
+        landmarks = [(int(lm.x * w), int(lm.y * h), lm.z) for lm in hand_lms.landmark]
+        
+        # マウス操作を処理
+        process_hand(landmarks, prev_landmarks, current_time)
+        prev_landmarks = landmarks
+    else:
+        # 手が検出されない場合は前のランドマークをクリア
+        prev_landmarks = None
 
     cv2.imshow("Virtual Mouse", img)
 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-
 
 cap.release()
 cv2.destroyAllWindows()
