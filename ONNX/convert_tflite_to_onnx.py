@@ -1,80 +1,53 @@
-import tensorflow as tf
-import numpy as np
-import onnx
-from onnx import helper, TensorProto
-import os
+"""
+TFLite to ONNX converter using tflite2onnx library.
 
-# Path to the TFLite model
-tflite_model_path = "models/hand_landmark_full.tflite"
-onnx_model_path = "models/hand_landmark_full.onnx"
+This script converts a TensorFlow Lite model to ONNX format.
+Note: tf.py_function approach doesn't work because EagerPyFunc is not supported in ONNX.
+      We need to use a dedicated TFLite to ONNX converter instead.
+"""
 
-# Load the TFLite model and allocate tensors
-interpreter = tf.lite.Interpreter(model_path=tflite_model_path)
-interpreter.allocate_tensors()
-
-# Get input and output tensor details
-input_details = interpreter.get_input_details()
-output_details = interpreter.get_output_details()
-
-print(f"Input details: {input_details}")
-print(f"Output details: {output_details}")
-
-# Convert TFLite to SavedModel first (intermediate step)
-saved_model_path = "models/hand_landmark_full_saved"
-
-# Create a concrete function from the TFLite interpreter
-def inference_fn(input_tensor):
-    interpreter.set_tensor(input_details[0]['index'], input_tensor.numpy())
-    interpreter.invoke()
+try:
+    from tflite2onnx import convert
+    print("Using tflite2onnx library for conversion")
     
-    outputs = []
-    for output_detail in output_details:
-        outputs.append(interpreter.get_tensor(output_detail['index']))
+    # Path to the TFLite model
+    tflite_model_path = "models/hand_landmark_full.tflite"
+    onnx_model_path = "models/hand_landmark_full.onnx"
     
-    if len(outputs) == 1:
-        return tf.constant(outputs[0])
-    else:
-        return tuple(tf.constant(o) for o in outputs)
-
-# Create a wrapper tf.function for the inference
-@tf.function(input_signature=[
-    tf.TensorSpec(shape=tuple(input_details[0]['shape']), dtype=input_details[0]['dtype'])
-])
-def inference(input_tensor):
-    # Use py_function to wrap the TFLite inference
-    return tf.py_function(
-        func=lambda x: inference_fn(x),
-        inp=[input_tensor],
-        Tout=[tf.float32 for _ in output_details]
-    )
-
-# Create concrete function and save as SavedModel
-concrete_func = inference.get_concrete_function(
-    tf.ones(shape=tuple(input_details[0]['shape']), dtype=input_details[0]['dtype'])
-)
-tf.saved_model.save(concrete_func, saved_model_path)
-
-print(f"Saved model created at {saved_model_path}")
-
-# Now convert SavedModel to ONNX using tf2onnx
-import tf2onnx
-
-# Use the updated tf2onnx API - pass the tf.function, not the concrete function
-model_proto, _ = tf2onnx.convert.from_function(
-    inference,
-    input_signature=[
-        tf.TensorSpec(shape=tuple(input_details[0]['shape']), dtype=input_details[0]['dtype'])
-    ],
-    opset=13
-)
-
-# Save the ONNX model
-with open(onnx_model_path, "wb") as f:
-    f.write(model_proto.SerializeToString())
-
-print(f"Model converted and saved to {onnx_model_path}")
-
-# Clean up the temporary SavedModel
-import shutil
-shutil.rmtree(saved_model_path)
-print(f"Cleaned up temporary SavedModel")
+    # Convert TFLite model to ONNX
+    print(f"Converting {tflite_model_path} to ONNX...")
+    onnx_model = convert(tflite_model_path, onnx_model_path)
+    
+    print(f"✓ Model successfully converted and saved to {onnx_model_path}")
+    
+    # Verify the converted model
+    import onnx
+    model = onnx.load(onnx_model_path)
+    print(f"\n=== Model Info ===")
+    print(f"IR version: {model.ir_version}")
+    print(f"Producer: {model.producer_name}")
+    print(f"Number of nodes: {len(model.graph.node)}")
+    print(f"\nInput:")
+    for inp in model.graph.input:
+        shape = [dim.dim_value for dim in inp.type.tensor_type.shape.dim]
+        print(f"  - {inp.name}: {shape}")
+    print(f"\nOutput:")
+    for out in model.graph.output:
+        shape = [dim.dim_value for dim in out.type.tensor_type.shape.dim]
+        print(f"  - {out.name}: {shape}")
+    
+except ImportError:
+    print("\n❌ tflite2onnx library is not installed.")
+    print("\nPlease install it using:")
+    print("  pip install tflite2onnx")
+    print("\nAlternatively, you can try:")
+    print("  pip install tf2onnx onnx-tf")
+    exit(1)
+except Exception as e:
+    print(f"\n❌ Conversion failed: {e}")
+    print("\n=== Troubleshooting ===")
+    print("TFLite to ONNX conversion can be challenging. Here are some alternatives:")
+    print("1. Use tflite2onnx: pip install tflite2onnx")
+    print("2. Use ai-edge-torch if the original model is PyTorch")
+    print("3. Re-export from the original framework (TensorFlow/PyTorch) to ONNX directly")
+    exit(1)
