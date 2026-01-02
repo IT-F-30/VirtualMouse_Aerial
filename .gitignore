@@ -2,3 +2,4 @@ target
 lib/
 .DS_Store
 venv
+Cargo.lock
