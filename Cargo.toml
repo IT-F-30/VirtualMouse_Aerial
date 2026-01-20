@@ -6,4 +6,4 @@ edition = "2024"
 [dependencies]
 enigo = "0.5"
 rand = "0.9.1"
-pyo3 = { version = "0.22.0", features = ["extension-module"] }
+pyo3 = { version = "0.27.2", features = ["extension-module"] }
